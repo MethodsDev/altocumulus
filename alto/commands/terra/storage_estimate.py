@@ -1,6 +1,4 @@
 import argparse
-from urllib.parse import urljoin
-
 from firecloud import api as fapi
 
 
@@ -29,7 +27,7 @@ def main(argv):
     if "writer" in access:
         access_filter.add("WRITER")
     if "owner" in access or len(access) == 0:
-        access_filter.add("PROJECT_OWNER")
+        access_filter.add("OWNER")
 
     with open(output, "wt") as out:
         out.write("namespace\tname\testimate\n")
@@ -38,11 +36,10 @@ def main(argv):
                 namespace = w["workspace"]["namespace"]
                 name = w["workspace"]["name"]
 
-                headers = fapi._fiss_agent_header()
-                root_url = fapi.fcconfig.root_url
-                r = fapi.__SESSION.get(
-                    urljoin(root_url, f"workspaces/{namespace}/{name}/storageCostEstimate"),
-                    headers=headers,
-                ).json()
-                estimate = r["estimate"]
-                out.write(f"{namespace}\t{name}\t{estimate}\n")
+                # Use the updated API method
+                r = fapi.get_storage_cost(namespace, name)
+                if r.status_code == 200:
+                    estimate = r.json()["estimate"]
+                    out.write(f"{namespace}\t{name}\t{estimate}\n")
+                else:
+                    print(f"Warning: Could not get storage cost for {namespace}/{name}: {r.status_code}")
