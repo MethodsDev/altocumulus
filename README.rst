@@ -25,3 +25,55 @@ Important tools used by Altocumulus:
 - `FireCloud Swagger <https://api.firecloud.org/>`_
 - `Dockstore Swagger <https://dockstore.org/api/static/swagger-ui/index.html>`_
 - `FireCloud Service Selector <https://github.com/broadinstitute/fiss>`_ (FISS). In particular, `fiss/firecloud/api.py <https://github.com/broadinstitute/fiss/blob/master/firecloud/api.py>`_.
+
+Installation
+------------
+
+Install from the MethodsDev repository:
+
+.. code-block:: bash
+
+   git clone https://github.com/MethodsDev/altocumulus.git
+   cd altocumulus
+   pip install -e .
+
+Verify installation:
+
+.. code-block:: bash
+
+   alto --version
+
+Quick Start
+-----------
+
+Get Terra Workspace Storage Estimates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Export storage cost estimates for all your Terra workspaces:
+
+.. code-block:: bash
+
+   alto terra storage_estimate --output storage_costs.tsv
+
+This will create a TSV file with columns: ``namespace``, ``name``, and ``estimate`` (monthly cost in USD).
+
+**Options:**
+
+- ``--output OUTPUT``: Path to output TSV file (required)
+- ``--access {owner,reader,writer}``: Filter by workspace access level (can specify multiple times)
+
+**Examples:**
+
+.. code-block:: bash
+
+   # Get estimates for all workspaces (default: owner access)
+   alto terra storage_estimate --output my_costs.tsv
+
+   # Get estimates only for workspaces where you're a reader
+   alto terra storage_estimate --output reader_costs.tsv --access reader
+
+   # Get estimates for multiple access levels
+   alto terra storage_estimate --output all_costs.tsv --access owner --access reader
+
+**Note:** You must be authenticated with Terra/FireCloud. The command uses your existing ``gcloud`` credentials.
+
