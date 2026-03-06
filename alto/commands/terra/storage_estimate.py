@@ -11,6 +11,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         body {{
             font-family: Arial, sans-serif;
@@ -18,7 +19,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             background-color: #f5f5f5;
         }}
         .container {{
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background-color: white;
             padding: 30px;
@@ -29,6 +30,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             color: #333;
             border-bottom: 3px solid #4285f4;
             padding-bottom: 10px;
+        }}
+        h2 {{
+            color: #333;
+            margin-top: 30px;
+            margin-bottom: 15px;
         }}
         .summary {{
             background-color: #f8f9fa;
@@ -51,6 +57,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             color: #666;
             font-size: 0.9em;
             margin-top: 5px;
+        }}
+        .chart-container {{
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            max-height: 600px;
+        }}
+        .chart-wrapper {{
+            position: relative;
+            height: 500px;
         }}
         table.dataTable {{
             width: 100% !important;
@@ -109,6 +126,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </div>
         </div>
 
+        <h2>Storage Costs by Workspace</h2>
+        <div class="chart-container">
+            <div class="chart-wrapper">
+                <canvas id="costChart"></canvas>
+            </div>
+        </div>
+
+        <h2>Detailed Workspace List</h2>
         <table id="storageTable" class="display">
             <thead>
                 <tr>
@@ -129,9 +154,78 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </div>
 
     <script>
+        // Chart data
+        const workspaceData = {chart_data};
+
+        // Create bar chart
+        const ctx = document.getElementById('costChart').getContext('2d');
+        const costChart = new Chart(ctx, {{
+            type: 'bar',
+            data: {{
+                labels: workspaceData.map(w => w.namespace + '/' + w.name),
+                datasets: [{{
+                    label: 'Monthly Cost (USD)',
+                    data: workspaceData.map(w => w.cost),
+                    backgroundColor: workspaceData.map(w => {{
+                        if (w.cost > 10) return 'rgba(211, 47, 47, 0.7)';  // red
+                        if (w.cost > 1) return 'rgba(245, 124, 0, 0.7)';   // orange
+                        if (w.cost > 0) return 'rgba(56, 142, 60, 0.7)';   // green
+                        return 'rgba(158, 158, 158, 0.7)';                  // gray
+                    }}),
+                    borderColor: workspaceData.map(w => {{
+                        if (w.cost > 10) return 'rgba(211, 47, 47, 1)';
+                        if (w.cost > 1) return 'rgba(245, 124, 0, 1)';
+                        if (w.cost > 0) return 'rgba(56, 142, 60, 1)';
+                        return 'rgba(158, 158, 158, 1)';
+                    }}),
+                    borderWidth: 1
+                }}]
+            }},
+            options: {{
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',  // Horizontal bar chart
+                plugins: {{
+                    legend: {{
+                        display: false
+                    }},
+                    tooltip: {{
+                        callbacks: {{
+                            label: function(context) {{
+                                return '$' + context.parsed.x.toFixed(2) + ' / month';
+                            }}
+                        }}
+                    }}
+                }},
+                scales: {{
+                    x: {{
+                        beginAtZero: true,
+                        title: {{
+                            display: true,
+                            text: 'Monthly Cost (USD)'
+                        }},
+                        ticks: {{
+                            callback: function(value) {{
+                                return '$' + value;
+                            }}
+                        }}
+                    }},
+                    y: {{
+                        ticks: {{
+                            autoSkip: false,
+                            font: {{
+                                size: 10
+                            }}
+                        }}
+                    }}
+                }}
+            }}
+        }});
+
+        // DataTable
         $(document).ready(function() {{
             $('#storageTable').DataTable({{
-                order: [[2, 'desc']],  // Sort by cost column descending
+                order: [[2, 'desc']],
                 pageLength: 25,
                 lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                 columnDefs: [
@@ -207,6 +301,9 @@ def main(argv):
             else:
                 print(f"Warning: Could not get storage cost for {namespace}/{name}: {r.status_code}")
 
+    # Sort by cost descending for chart
+    workspace_data_sorted = sorted(workspace_data, key=lambda x: x["estimate"], reverse=True)
+
     # Write TSV output if requested
     if args.output:
         with open(args.output, "wt") as out:
@@ -233,6 +330,14 @@ def main(argv):
                 </tr>"""
             table_rows.append(row)
 
+        # Prepare chart data (limit to top 50 workspaces to keep chart readable)
+        chart_data_limited = workspace_data_sorted[:50]
+        import json
+        chart_data_json = json.dumps([
+            {"namespace": ws["namespace"], "name": ws["name"], "cost": ws["estimate"]}
+            for ws in chart_data_limited
+        ])
+
         # Generate HTML
         html_content = HTML_TEMPLATE.format(
             total_workspaces=total_workspaces,
@@ -240,6 +345,7 @@ def main(argv):
             avg_cost=avg_cost,
             nonzero_workspaces=nonzero_workspaces,
             table_rows='\n'.join(table_rows),
+            chart_data=chart_data_json,
             timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         )
 

@@ -71,11 +71,13 @@ Note: At least one of ``--output`` or ``--html-output`` must be specified.
 
 **HTML Report Features:**
 
+- **Interactive bar chart** showing top 50 workspaces by cost (horizontal bars, color-coded)
 - Interactive sortable table (default: sorted by cost descending)
 - Color-coded costs (red >$10, orange >$1, green >$0)
-- Summary statistics (total workspaces, total cost, average cost)
+- Summary statistics dashboard (total workspaces, total cost, average cost)
 - Search and filter capabilities
 - Pagination for large workspace lists
+- Hover tooltips on chart bars showing exact costs
 
 **Examples:**
 
