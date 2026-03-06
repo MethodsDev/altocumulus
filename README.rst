@@ -45,7 +45,6 @@ Verify installation:
 
 Quick Start
 -----------
-
 Get Terra Workspace Storage Estimates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -53,27 +52,48 @@ Export storage cost estimates for all your Terra workspaces:
 
 .. code-block:: bash
 
-   alto terra storage_estimate --output storage_costs.tsv
+   alto terra storage_estimate --html-output storage_report.html
 
-This will create a TSV file with columns: ``namespace``, ``name``, and ``estimate`` (monthly cost in USD).
+This will create an interactive HTML report with workspace storage costs, or use ``--output`` for TSV format.
 
 **Options:**
 
-- ``--output OUTPUT``: Path to output TSV file (required)
+- ``--output OUTPUT``: Path to output TSV file
+- ``--html-output HTML_OUTPUT``: Path to output HTML report
 - ``--access {owner,reader,writer}``: Filter by workspace access level (can specify multiple times)
+
+Note: At least one of ``--output`` or ``--html-output`` must be specified.
+
+**Output Formats:**
+
+1. **TSV format** (``--output``): Tab-separated file for data processing with columns: ``namespace``, ``name``, and ``estimate`` (monthly cost in USD)
+2. **HTML format** (``--html-output``): Interactive web report with sortable tables
+
+**HTML Report Features:**
+
+- Interactive sortable table (default: sorted by cost descending)
+- Color-coded costs (red >$10, orange >$1, green >$0)
+- Summary statistics (total workspaces, total cost, average cost)
+- Search and filter capabilities
+- Pagination for large workspace lists
 
 **Examples:**
 
 .. code-block:: bash
 
-   # Get estimates for all workspaces (default: owner access)
-   alto terra storage_estimate --output my_costs.tsv
+   # Generate interactive HTML report
+   alto terra storage_estimate --html-output report.html
 
-   # Get estimates only for workspaces where you're a reader
-   alto terra storage_estimate --output reader_costs.tsv --access reader
+   # Generate TSV data file
+   alto terra storage_estimate --output costs.tsv
 
-   # Get estimates for multiple access levels
-   alto terra storage_estimate --output all_costs.tsv --access owner --access reader
+   # Generate both formats
+   alto terra storage_estimate --output costs.tsv --html-output report.html
+
+   # Filter by access level
+   alto terra storage_estimate --html-output report.html --access reader
+
+   # Multiple access levels
+   alto terra storage_estimate --html-output report.html --access owner --access reader
 
 **Note:** You must be authenticated with Terra/FireCloud. The command uses your existing ``gcloud`` credentials.
-
